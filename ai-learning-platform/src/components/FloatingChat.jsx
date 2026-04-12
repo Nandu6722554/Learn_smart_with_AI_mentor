@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import { Bot, X, Send, Minimize2, Sparkles } from "lucide-react";
+import { Bot, X, Send, Sparkles } from "lucide-react";
 import axios from "axios";
 import { getMemory, buildMemoryContext } from "../lib/memory";
 
-const BASE = "http://localhost:5000/api";
+// Use same env var as the rest of the app — BASE already includes /api
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 const SECTION_SUGGESTIONS = {
   "Intuition":     ["Explain simpler", "Give a real-world example", "Why does this matter?"],
