@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CheckCircle, XCircle, Trophy, TrendingUp, AlertTriangle, Lightbulb } from "lucide-react";
+import { CheckCircle, XCircle, Trophy, TrendingUp, AlertTriangle, Lightbulb, Zap } from "lucide-react";
 
 function ScoreRing({ score, total }) {
   const pct = Math.round((score / total) * 100);
@@ -66,9 +66,10 @@ export default function QuizTab({ data, onQuizComplete, topic }) {
     data.questions.forEach((_, i) => { all[i] = true; });
     setRevealed(all);
     setSubmitted(true);
-    // report to parent for XP + progress tracking
     const finalScore = Object.keys(all).filter(qi => selected[qi] === data.questions[qi]?.correct_answer).length;
+    const xpEarned = finalScore * 20;
     onQuizComplete?.(topic, finalScore, total, weakAreas);
+    // Show XP feedback via parent — handled by store
   };
 
   const handleReset = () => {
@@ -147,6 +148,11 @@ export default function QuizTab({ data, onQuizComplete, topic }) {
       {/* Feedback Panel */}
       {submitted && (
         <div className="feedback-panel">
+          {/* XP earned banner */}
+          <div className="quiz-xp-banner">
+            <Zap size={16} style={{ color: "#A78BFA" }} />
+            <span>You earned <strong style={{ color: "#A78BFA" }}>+{score * 20} XP</strong> for this quiz!</span>
+          </div>
           <div className="feedback-score-row">
             <ScoreRing score={score} total={total} />
             <div className="feedback-score-text">

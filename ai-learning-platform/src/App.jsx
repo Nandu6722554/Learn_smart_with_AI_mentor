@@ -8,6 +8,7 @@ import Sidebar from "./components/Sidebar";
 import Header from "./components/Header";
 import FloatingChat from "./components/FloatingChat";
 import XPToast from "./components/XPToast";
+import LevelUpToast from "./components/LevelUpToast";
 import Landing from "./pages/Landing";
 import AuthPage from "./pages/AuthPage";
 import Home from "./pages/Home";
@@ -15,17 +16,18 @@ import LearnPage from "./pages/LearnPage";
 import PlaygroundPage from "./pages/PlaygroundPage";
 import QuizPage from "./pages/QuizPage";
 import ProgressPage from "./pages/ProgressPage";
-import InterviewPage from "./pages/InterviewPage";
 import AskAIPage from "./pages/AskAIPage";
 import SmartStudyPage from "./pages/SmartStudyPage";
+import InterviewPrepPage from "./pages/InterviewPrepPage";
 import DailyPlanPage from "./pages/DailyPlanPage";
-import MockInterviewPage from "./pages/MockInterviewPage";
 import HistoryPage from "./pages/HistoryPage";
 import AchievementToast from "./components/AchievementToast";
 import { saveToHistory } from "./lib/storage";
 import { addTopicToMemory, addQuizResult as addQuizToMemory, addWeakArea } from "./lib/memory";
 import { canUse, incrementUsage } from "./lib/subscription";
+import { saveSession } from "./lib/session";
 import PricingPage from "./pages/PricingPage";
+import Onboarding, { hasOnboarded } from "./components/Onboarding";
 import "./App.css";
 
 export default function App() {
@@ -42,6 +44,7 @@ export default function App() {
   // Show landing if not logged in and not in guest mode
   const [guestMode, setGuestMode] = useState(false);
   const isAuthenticated = !!user || guestMode;
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   if (authLoading) return <div className="loader-wrap"><div className="spinner" /></div>;
 
@@ -50,7 +53,21 @@ export default function App() {
   }
 
   if (authMode === "auth" && !isAuthenticated) {
-    return <AuthPage onSuccess={() => { setAuthMode(null); setGuestMode(!user); }} />;
+    return <AuthPage onSuccess={() => {
+      setAuthMode(null);
+      setGuestMode(!user);
+      if (!hasOnboarded()) setShowOnboarding(true);
+    }} />;
+  }
+
+  if (showOnboarding) {
+    return <Onboarding
+      userName={user?.user_metadata?.name?.split(" ")[0] || ""}
+      onComplete={({ goal, level }) => {
+        if (level) store.setLevel(level === "beginner" ? "basic" : level === "advanced" ? "advanced" : "intermediate");
+        setShowOnboarding(false);
+      }}
+    />;
   }
 
   const persistTopic = async (t, lvl) => {
@@ -103,8 +120,8 @@ export default function App() {
       addTopicToMemory(t, store.level, mode); // persist to memory
       incrementUsage("generates"); // track usage
       saveToHistory({ topic: t, mode, level: store.level, modules, timestamp: Date.now() });
+      saveSession({ topic: t, mode, step: "Intuition", page: "learn", level: store.level });
       toast.success(`✅ "${t}" ready!`, { duration: 2000 });
-      XPToast(`+${XP.GENERATE} XP — All modules ready!`);
     } catch (err) {
       console.error("Generate error:", err.message);
       toast.error("Something went wrong. Check your API key.");
@@ -148,10 +165,17 @@ export default function App() {
           dailyGoalCount={store.dailyGoalCount}
           unlockedAchievements={store.unlockedAchievements}
           completedCount={Object.values(store.quizHistory || []).length}
+          weakAreas={store.weakAreas}
+          quizHistory={store.quizHistory}
+          nextLevelXP={store.nextLevelXP}
+          levelNames={store.levelNames}
+          onResume={(session) => {
+            if (session?.topic) store.setTopic(session.topic);
+            if (session?.mode)  setMode(session.mode);
+            generate(session?.topic || store.topic);
+          }}
         />;
       case "learn":
-        if (mode === "interview") return <InterviewPage data={interviewData} loading={loading} topic={store.activeTopic} level={store.level} />;
-        if (mode === "practice")  return <PlaygroundPage pgData={store.pgData} loading={loading} onPractice={handlePractice} topic={store.activeTopic} />;
         return <LearnPage
           learnData={store.learnData} quizData={store.quizData} pgData={store.pgData}
           loading={loading} topic={store.activeTopic}
@@ -167,8 +191,8 @@ export default function App() {
         return <QuizPage quizData={store.quizData} loading={loading} onQuizComplete={handleQuizComplete} topic={store.activeTopic} />;
       case "ask":           return <AskAIPage />;
       case "study":         return <SmartStudyPage />;
+      case "interviewprep": return <InterviewPrepPage />;
       case "learningplan":  return <DailyPlanPage />;
-      case "mockinterview": return <MockInterviewPage />;
       case "pricing":       return <PricingPage onUpgrade={() => setPage("home")} />;
       case "history":
         return <HistoryPage onReopen={(entry) => {
@@ -227,6 +251,8 @@ export default function App() {
         <main className="app-content">{renderPage()}</main>
       </div>
       <FloatingChat topic={store.activeTopic} section={store.activeSection} />
+      <XPToast xpGain={store.xpGain} />
+      <LevelUpToast levelUp={store.levelUp} />
       <AchievementToast achievement={store.newAchievement} />
     </div>
   );

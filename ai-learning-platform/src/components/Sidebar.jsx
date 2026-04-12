@@ -1,4 +1,4 @@
-import { Home, BookOpen, Map, Dumbbell, Briefcase, MessageCircle, BarChart2, Clock, GraduationCap, CalendarDays, Crown, ChevronLeft, ChevronRight, LogOut, Zap } from "lucide-react";
+import { Home, BookOpen, Map, Dumbbell, Briefcase, MessageCircle, BarChart2, Clock, GraduationCap, CalendarDays, Crown, ChevronLeft, ChevronRight, LogOut, Zap, CheckCircle } from "lucide-react";
 import { getPlan } from "../lib/subscription";
 
 const NAV = [
@@ -6,8 +6,7 @@ const NAV = [
   { id: "learn",        label: "Learn",          icon: BookOpen,      color: "#a78bfa" },
   { id: "learningplan", label: "Learning Plan",  icon: CalendarDays,  color: "#ec4899" },
   { id: "practice",     label: "Practice",       icon: Dumbbell,      color: "#f59e0b" },
-  { id: "interview",    label: "Interview",      icon: Briefcase,     color: "#fb923c" },
-  { id: "mockinterview",label: "Mock Interview", icon: Briefcase,     color: "#ef4444" },
+  { id: "interviewprep",label: "Interview Prep", icon: Briefcase,     color: "#f59e0b" },
   { id: "study",        label: "Smart Study",    icon: GraduationCap, color: "#ec4899" },
   { id: "ask",          label: "Ask AI",         icon: MessageCircle, color: "#64748b" },
   { id: "history",      label: "History",        icon: Clock },
@@ -18,7 +17,7 @@ export default function Sidebar({ page, mode, setPage, setMode, collapsed, setCo
   const plan = getPlan();
 
   const handleNav = (item) => {
-    if (["home", "progress", "ask", "history", "study", "learningplan", "mockinterview", "pricing"].includes(item.id)) {
+    if (["home", "progress", "ask", "history", "study", "learningplan", "interviewprep", "mockinterview", "pricing"].includes(item.id)) {
       setPage(item.id);
     } else {
       setMode(item.id);
@@ -27,7 +26,7 @@ export default function Sidebar({ page, mode, setPage, setMode, collapsed, setCo
   };
 
   const isActive = (item) => {
-    if (["home", "progress", "ask", "history", "study", "learningplan", "mockinterview", "pricing"].includes(item.id)) return page === item.id;
+    if (["home", "progress", "ask", "history", "study", "learningplan", "interviewprep", "mockinterview", "pricing"].includes(item.id)) return page === item.id;
     return page === "learn" && mode === item.id;
   };
 
@@ -37,7 +36,6 @@ export default function Sidebar({ page, mode, setPage, setMode, collapsed, setCo
         <span className="sidebar-logo-icon">🎓</span>
         {!collapsed && <span className="sidebar-logo-text">Mentor<span className="logo-ai">AI</span></span>}
       </div>
-
       <nav className="sidebar-nav">
         {NAV.map(({ id, label, icon: Icon, color }) => {
           const active = isActive({ id });
@@ -82,14 +80,16 @@ export default function Sidebar({ page, mode, setPage, setMode, collapsed, setCo
         </div>
       )}
 
-      {/* Upgrade button for free users */}
-      {plan === "free" && !collapsed && (
-        <button className="sidebar-upgrade-btn" onClick={() => setPage("pricing")}>
+      {/* Subscription state */}
+      {!collapsed && plan === "free" && (
+        <button className="sb-upgrade-btn" onClick={() => setPage("pricing")}>
           <Zap size={14} /> Upgrade to Pro
         </button>
       )}
-      {plan === "pro" && !collapsed && (
-        <div className="sidebar-pro-badge"><Crown size={12} /> Pro Plan</div>
+      {!collapsed && plan === "pro" && (
+        <div className="sb-pro-active">
+          <CheckCircle size={13} /> Pro Activated
+        </div>
       )}
 
       <button className="sidebar-collapse-btn" onClick={() => setCollapsed(c => !c)}>
